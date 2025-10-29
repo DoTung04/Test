@@ -33,7 +33,9 @@ module.exports = {
     sendgrid: {
       apiKey: process.env.SENDGRID_API_KEY
     },
-    from: process.env.EMAIL_FROM
+    from: process.env.EMAIL_FROM,
+    from: 'Your App <onboarding@resend.dev>', // hoặc domain bạn đã verify
+    resendApiKey: process.env.RESEND_API_KEY
   },
   upload: {
     limit: process.env.UPLOAD_LIMIT,
