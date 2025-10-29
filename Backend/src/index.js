@@ -3,8 +3,8 @@ const config = require('./config/config')
 const logger = require('./config/logger')
 
 // SERVER CONFIGURATION
-const host = config.app.host || 'localhost'
-const port = config.app.port || 3000
+const host = process.env.PORT || 'localhost'
+const port = process.env.PORT || 3000
 const prefix = config.app.prefix || ''
 
 let server = null
