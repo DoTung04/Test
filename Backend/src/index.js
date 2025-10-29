@@ -3,7 +3,7 @@ const config = require('./config/config')
 const logger = require('./config/logger')
 
 // SERVER CONFIGURATION
-const host = process.env.PORT || 'localhost'
+const host = process.env.HOST || 'localhost'
 const port = process.env.PORT || 3000
 const prefix = config.app.prefix || ''
 
