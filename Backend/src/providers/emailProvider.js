@@ -7,9 +7,9 @@ let resend = null
 function initialize() {
   if (config.email.resendApiKey) {
     resend = new Resend(config.email.resendApiKey)
-    logger.info('Resend email service initialized')
+    logger.info('✅ Resend email service initialized')
   } else {
-    logger.error('Resend API key missing — please set config.email.resendApiKey')
+    logger.error('❌ Resend API key missing — please set config.email.resendApiKey')
   }
 }
 
@@ -21,31 +21,37 @@ function initialize() {
  */
 async function send(email, subject, html) {
   if (!resend) {
-    logger.error('Resend service not initialized')
+    logger.error('❌ Resend service not initialized')
     throw new Error('Email service not configured')
   }
 
   try {
-    const result = await resend.emails.send({
-      from: config.email.from,  // ví dụ: 'Your App <no-reply@yourdomain.com>'
+    const { data, error } = await resend.emails.send({
+      from: config.email.from || 'Your App <onboarding@resend.dev>', // ✅ fallback an toàn
       to: email,
       subject,
       html
     })
 
-    logger.info(`✅ Email sent to ${email}: ${result.data.id}`)
-    return { success: true, messageId: result.data.id }
-  } catch (error) {
-    logger.error(`❌ Failed to send email to ${email}: ${error.message}`)
-    throw error
+    if (error) {
+      logger.error(`❌ Failed to send email to ${email}: ${error.message}`)
+      return { success: false, error: error.message }
+    }
+
+    logger.info(`✅ Email sent to ${email}: ${data.id}`)
+    return { success: true, messageId: data.id }
+
+  } catch (err) {
+    logger.error(`🔥 Unexpected error sending email: ${err.stack}`)
+    return { success: false, error: err.message }
   }
 }
 
 /**
- * Hàm verifyConnection (Resend không cần)
+ * Resend không cần verify SMTP, nhưng ta log cho rõ
  */
 async function verifyConnection() {
-  logger.info('Resend uses HTTPS API — no SMTP verification needed')
+  logger.info('ℹ️ Resend uses HTTPS API — no SMTP verification needed')
   return true
 }
 
