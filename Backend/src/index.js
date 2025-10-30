@@ -1,74 +1,63 @@
-const app = require('./app')
-const config = require('./config/config')
-const logger = require('./config/logger')
+const { Resend } = require('resend')
+const config = require('../config/config')
+const logger = require('../config/logger')
 
-// SERVER CONFIGURATION
-const host = '0.0.0.0'
-const port = process.env.PORT || 3000
-const prefix = config.app.prefix || ''
+let resend = null
 
-let server = null
-
-// START SERVER
-const startServer = () => {
-  try {
-    server = app.listen(port, host, () => {
-      logger.info(`Server running at http://${host}:${port}${prefix}`)
-      logger.info(`Environment: ${config.env}`)
-      logger.info(`Started at: ${new Date().toISOString()}`)
-    })
-
-    // Handle server errors
-    server.on('error', (error) => {
-      if (error.code === 'EADDRINUSE') {
-        logger.error(`❌ Port ${port} is already in use. Please choose a different port.`)
-      } else {
-        logger.error('❌ Server error:', error)
-      }
-      process.exit(1)
-    })
-
-  } catch (error) {
-    logger.error('❌ Failed to start server:', error)
-    process.exit(1)
-  }
-}
-
-// GRACEFUL SHUTDOWN
-const gracefulShutdown = (signal) => {
-  logger.info(`📴 Received signal ${signal}. Shutting down server...`)
-
-  if (server) {
-    server.close((error) => {
-      if (error) {
-        logger.error('❌ Error shutting down server:', error)
-        process.exit(1)
-      } else {
-        logger.info('✅ Server shut down successfully')
-        process.exit(0)
-      }
-    })
-
-    // Force close after 10 seconds
-    setTimeout(() => {
-      logger.error('Timeout! Force closing server...')
-      process.exit(1)
-    }, 10000)
+function initialize() {
+  if (config.email.resendApiKey) {
+    resend = new Resend(config.email.resendApiKey)
+    logger.info('✅ Resend email service initialized')
   } else {
-    process.exit(0)
+    logger.error('❌ Resend API key missing — please set config.email.resendApiKey')
   }
 }
 
-// ERROR HANDLERS
-const handleUnexpectedError = (error) => {
-  logger.error('Unexpected error:', error)
-  gracefulShutdown('UNCAUGHT_EXCEPTION')
+/**
+ * Gửi email bằng Resend API
+ * @param {string} email - người nhận
+ * @param {string} subject - tiêu đề
+ * @param {string} html - nội dung HTML
+ */
+async function send(email, subject, html) {
+  if (!resend) {
+    logger.error('❌ Resend service not initialized')
+    throw new Error('Email service not configured')
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: config.email.from || 'Your App <onboarding@resend.dev>', // ✅ fallback an toàn
+      to: email,
+      subject,
+      html
+    })
+
+    if (error) {
+      logger.error(`❌ Failed to send email to ${email}: ${error.message}`)
+      return { success: false, error: error.message }
+    }
+
+    logger.info(`✅ Email sent to ${email}: ${data.id}`)
+    return { success: true, messageId: data.id }
+
+  } catch (err) {
+    logger.error(`🔥 Unexpected error sending email: ${err.stack}`)
+    return { success: false, error: err.message }
+  }
 }
 
-// PROCESS EVENT LISTENERS
-process.on('uncaughtException', handleUnexpectedError)
-process.on('unhandledRejection', handleUnexpectedError)
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
-process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+/**
+ * Resend không cần verify SMTP, nhưng ta log cho rõ
+ */
+async function verifyConnection() {
+  logger.info('ℹ️ Resend uses HTTPS API — no SMTP verification needed')
+  return true
+}
 
-startServer()
+initialize()
+
+module.exports = {
+  send,
+  verifyConnection
+}
