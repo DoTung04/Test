@@ -27,10 +27,10 @@ module.exports = {
       port: process.env.SMTP_PORT,
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-        from: process.env.EMAIL_FROM
+        pass: process.env.EMAIL_PASS
       }
     },
+    from: process.env.EMAIL_FROM
     sendgrid: {
       apiKey: process.env.SENDGRID_API_KEY
     },
