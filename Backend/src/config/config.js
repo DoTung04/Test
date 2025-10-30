@@ -30,7 +30,7 @@ module.exports = {
         pass: process.env.EMAIL_PASS
       }
     },
-    from: process.env.EMAIL_FROM
+    from: process.env.EMAIL_FROM,
     sendgrid: {
       apiKey: process.env.SENDGRID_API_KEY
     },
